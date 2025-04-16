@@ -44,9 +44,10 @@ async function fetchPapersForDay({ conceptId, fromDate, toDate, cursor, pageSize
 
 function extractRelevantPaperInfo(paper) {
     return {
-        id: paper.id,
+        id: paper.id.split('/').pop(),  // extract id from url 
         title: paper.title,
         doi: paper.doi,
+        type: paper.type, 
         authors: (paper.authorships || []).map(auth => ({
             name: auth.author?.display_name,
             affiliation: auth.institutions?.map(inst => inst.display_name)
@@ -62,7 +63,7 @@ function extractRelevantPaperInfo(paper) {
         },
         citations: {
             count: paper.cited_by_count,
-            referenced_works: paper.referenced_works || []
+            referenced_works: (paper.referenced_works || []).map(ref => ref.split('/').pop()) // id from url
         },
         keywords: (paper.keywords || []).map(k => k.display_name),
         topics: (paper.topics || []).map(t => ({
