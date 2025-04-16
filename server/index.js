@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 
 app.get('/fetch-openalex', async (req, res) => {
     try {
-        await runOpenAlexFetch();
+        await runOpenAlexFetch('forward');
         res.status(200).json({ message: 'Fetch complete' });
     } catch (error) {
         console.error('Error in fetch-openalex:', error);

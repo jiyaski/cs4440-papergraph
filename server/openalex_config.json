@@ -1,13 +1,12 @@
 {
-  "page_size": 100,
-  "concepts": {
-    "Database": "C77088390"
-  },
-  "earliest_fetched_date": "2023-01-01",
-  "latest_fetched_date": "2023-12-31",
-  "start_date": "2000-01-01",
-  "direction": "forward",
-  "cursors": {
-    "C77088390_2022-12-31": "IlsxNjcyNDQ0ODAwMDAwLCA2OS4wLCAxLCAnaHR0cHM6Ly9vcGVuYWxleC5vcmcvVzQzMTk3Mzc0NTEnXSI="
-  }
+    "page_size": 100,
+    "concepts": {
+        "Database": "C77088390"
+    },
+    "earliest_fetched_date": "2020-12-31",
+    "latest_fetched_date": "2020-12-31",
+    "start_date": "2000-01-01",
+    "cursors": {
+        "C77088390_2021-01-01": "IlsxNjA5NDU5MjAwMDAwLCA5OS4wLCA3NiwgJ2h0dHBzOi8vb3BlbmFsZXgub3JnL1czMTk1MjI0MDUxJ10i"
+    }
 }
