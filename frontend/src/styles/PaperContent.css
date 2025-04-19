@@ -1,0 +1,31 @@
+.paper-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: #e5e7eb;
+    padding: 1.5rem;
+    overflow: auto;
+  }
+  
+  .paper-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+  
+  .paper-meta {
+    font-size: 0.875rem;
+    color: #9ca3af; 
+  }
+  
+  .paper-meta strong {
+    color: #f9fafb; 
+  }
+  
+  .paper-abstract {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #d1d5db;
+  }
+  
