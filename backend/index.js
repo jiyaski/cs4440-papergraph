@@ -1,15 +1,17 @@
 
 require('dotenv').config();
 const express = require('express');
-const driver = require('./neo4j'); 
+const driver = require('./neo4j');
 const runOpenAlexFetch = require('./openalex'); // <- Import the fetch script
+const papersRouter = require('./papers'); // <- Import the papers route (searching feature)
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+require('./scheduler');
 
-// middleware 
+// middleware
 app.use(express.json());
-
+app.use('/papers', papersRouter); // Enables /papers/search and /papers/:id
 
 // routes
 app.get('/', (req, res) => {
