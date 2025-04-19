@@ -1,0 +1,69 @@
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  background-color: #111827;
+  color: white;
+}
+
+
+.app-root {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  overflow: scroll;
+}
+
+.header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #374151; 
+  background-color: #111827;
+  z-index: 10;
+}
+
+.title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.main-container {
+  display: flex;
+  height: 100%;    
+  width: 100%;
+  overflow: auto;
+  flex: 1;
+  position: relative;
+}
+
+.main-left {
+  display: flex;
+  flex-direction: column;
+  width: 70%;
+  height: 100%;      
+  background-color: #1f2937;
+  min-width: 200px;
+  overflow: auto;
+}
+
+.main-right {
+  flex: 1;
+  min-width: 200px;
+  overflow: auto;
+  height: 100%;
+}
+
+.resizer {
+  width: 6px;
+  cursor: ew-resize;
+  background-color: #374151;
+  z-index: 10;
+}
+.resizer:hover {
+  background-color: #4b5563;
+}
