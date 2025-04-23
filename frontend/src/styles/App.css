@@ -6,7 +6,7 @@ body,
   margin: 0;
   padding: 0;
   font-family: sans-serif;
-  background-color: #111827;
+  background-color: #101623;
   color: white;
 }
 
@@ -21,8 +21,8 @@ body,
 
 .header {
   padding: 1.5rem;
-  border-bottom: 1px solid #374151; 
-  background-color: #111827;
+  border-bottom: 1px solid #384252; 
+  background-color: #0f1523;
   z-index: 10;
 }
 
@@ -46,7 +46,7 @@ body,
   flex-direction: column;
   width: 70%;
   height: 100%;      
-  background-color: #1f2937;
+  background-color: #1c2633;
   min-width: 200px;
   overflow: auto;
 }

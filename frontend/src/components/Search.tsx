@@ -7,7 +7,7 @@ interface SearchProps {
   onSearch: () => void
 }
 
-const sampleData: Paper[] = [
+/* const sampleData: Paper[] = [
   {
     id: '1',
     title: 'Aero-Puff Dynamics',
@@ -144,18 +144,26 @@ const sampleData: Paper[] = [
       }
     ]
   }
-]
+] */
 
 
 export default function Search({ onResults, onSearch }: SearchProps) {
-  const [query, setQuery] = useState('')
+  const [keywordQuery, setKeywordQuery] = useState('')
+  const [authorQuery, setAuthorQuery] = useState('')
 
   const handleSearch = async () => {
-    const trimmed = query.trim()
-    if (!trimmed) return
+    const keyword = keywordQuery.trim()
+    const author = authorQuery.trim()
+
+    if (!keyword && !author) return
 
     const url = new URL('http://localhost:3000/papers/search')
-    url.searchParams.set('q', trimmed)
+    if (keyword) {
+      url.searchParams.set('q', keyword)
+    }
+    if (author) {
+      url.searchParams.set('author', author)
+    }
 
     try {
       const res = await fetch(url.toString())
@@ -178,9 +186,20 @@ export default function Search({ onResults, onSearch }: SearchProps) {
       <input
         type="text"
         className="search-input"
-        placeholder="Search papers..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search papers by keyword..."
+        value={keywordQuery}
+        onChange={(e) => setKeywordQuery(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+      />
+      <button className="search-button" onClick={handleSearch}>
+        Search
+      </button>
+      <input
+        type="text"
+        className="search-input"
+        placeholder="Search papers by author..."
+        value={authorQuery}
+        onChange={(e) => setAuthorQuery(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
       />
       <button className="search-button" onClick={handleSearch}>
