@@ -1,6 +1,10 @@
 // Returns a list of papers whose title/keywords and/or authors contain the respective search query.
 // Defines GET /papers/search?q=keyword_query, /papers/search?author=author_query, or /papers/search?q=keyword_query&author=author_query
 
+const express = require('express');
+const router = express.Router();
+const driver = require('./neo4j');
+
 router.get('/search', async (req, res) => {
     const query = req.query.q?.toLowerCase();
     const author = req.query.author?.toLowerCase();
@@ -25,7 +29,7 @@ router.get('/search', async (req, res) => {
         if (query) {
             cypherParts.push(`
                 toLower(p.title) CONTAINS $query OR
-                toLower(p.keywords) CONTAINS $query
+                ANY(kw IN p.keywords WHERE toLower(kw) CONTAINS $query)
             `);
             params.query = query;
         }

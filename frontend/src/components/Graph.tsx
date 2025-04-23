@@ -14,6 +14,8 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
   const gRef = useRef<SVGGElement | null>(null)
 
   useEffect(() => {
+    console.log('📊 Graph received data:', data)
+
     if (!data.length || !svgRef.current || !gRef.current) return
 
     const svg = d3.select(svgRef.current)
@@ -27,7 +29,7 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
 
     const nodes = data.map((d) => ({ id: d.id, label: d.title }))
     const links = data.flatMap((d) =>
-      (d.citations.referenced_works || []).map((targetId) => ({
+      (d.citations?.referenced_works || []).map((targetId) => ({
         source: d.id,
         target: targetId
       }))
@@ -130,5 +132,5 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
       </svg>
     </div>
   )
-  
+
 }

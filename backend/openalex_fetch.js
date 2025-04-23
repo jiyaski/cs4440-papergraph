@@ -44,10 +44,10 @@ async function fetchPapersForDay({ conceptId, fromDate, toDate, cursor, pageSize
 
 function extractRelevantPaperInfo(paper) {
     return {
-        id: paper.id.split('/').pop(),  // extract id from url 
+        id: paper.id.split('/').pop(),  // extract id from url
         title: paper.title,
         doi: paper.doi,
-        type: paper.type, 
+        type: paper.type,
         authors: (paper.authorships || []).map(auth => ({
             name: auth.author?.display_name,
             affiliation: auth.institutions?.map(inst => inst.display_name)
@@ -161,3 +161,10 @@ async function runOpenAlexFetch(direction) {
 }
 
 module.exports = runOpenAlexFetch;
+
+if (require.main === module) {
+    const direction = process.argv[2] || 'forward';
+    runOpenAlexFetch(direction).catch((err) => {
+        console.error('Fetch failed:', err);
+    });
+}

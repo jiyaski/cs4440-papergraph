@@ -150,22 +150,27 @@ const sampleData: Paper[] = [
 export default function Search({ onResults, onSearch }: SearchProps) {
   const [query, setQuery] = useState('')
 
-  const handleSearch = () => {
-    const lower = query.toLowerCase()
+  const handleSearch = async () => {
+    const trimmed = query.trim()
+    if (!trimmed) return
 
-    const filtered = sampleData.filter((paper) =>
-      paper.title.toLowerCase().includes(lower) ||
-      paper.keywords?.some((kw) => kw.toLowerCase().includes(lower)) ||
-      paper.authors.some((a) => a.name.toLowerCase().includes(lower))
-    )
+    const url = new URL('http://localhost:3000/papers/search')
+    url.searchParams.set('q', trimmed)
 
-    const citedIds = new Set(filtered.flatMap(p => p.citations.referenced_works))
-    const citedPapers = sampleData.filter(p =>
-      citedIds.has(p.id) && !filtered.some(f => f.id === p.id)
-    )
+    try {
+      const res = await fetch(url.toString())
+      console.log('📡 Sent request to:', url.toString())
+      if (!res.ok) throw new Error('Search failed')
 
-    onResults([...filtered, ...citedPapers])
-    onSearch()
+      const data = await res.json()
+      console.log('Received data:', data)
+
+      onResults(data)
+      onSearch()
+    } catch (err) {
+      console.error('Search error:', err)
+      onResults([])
+    }
   }
 
   return (
