@@ -1,139 +1,126 @@
-
 require('dotenv').config();
 const fs = require('fs');
-const driver = require('./neo4j.js'); 
+const driver = require('./neo4j.js');
 
-async function importPaper(paper, session) {
-    const {
-        id, doi, title, type, citations, authors, keywords,
-        abstract_inverted_index, full_text_url, publication, topics
-    } = paper;
+async function importPapersBatch(papersBatch) {
+  const session = driver.session();
+  try {
+    await session.executeWrite(tx =>
+      tx.run(
+        `
+        UNWIND $batch AS paper
 
-    const full_source = full_text_url || null;
-    const is_open_access = full_text_url !== null;
-    const keywordStr = keywords.join(', ');
-    const cited_by_count = citations.count;
+        // create/update the paper node
+        MERGE (p:paper {id: paper.id})
+        SET p.doi                  = paper.doi,
+            p.title                = paper.title,
+            p.type                 = paper.type,
+            p.cited_by_count       = paper.cited_by_count,
+            p.is_open_access       = paper.is_open_access,
+            p.full_source          = paper.full_source,
+            p.keywords             = paper.keywords,
+            p.abstract_inverted_index = paper.abstract_inverted_index
 
-    await session.run(`
-        MERGE (p:paper {id: $id})
-        SET p.doi = $doi,
-            p.title = $title,
-            p.type = $type,
-            p.cited_by_count = $cited_by_count,
-            p.is_open_access = $is_open_access,
-            p.full_source = $full_source,
-            p.keywords = $keywords,
-            p.abstract_inverted_index = $abstract_inverted_index
-    `, {
-        id, doi, title, type,
-        cited_by_count,
-        is_open_access,
-        full_source,
-        keywords: keywordStr,
-        abstract_inverted_index
-    });
+        // publication/venue relationship
+        FOREACH (_ IN CASE WHEN paper.publication.journal IS NOT NULL THEN [1] ELSE [] END |
+          MERGE (v:venue {name: paper.publication.journal})
+          MERGE (p)-[r:published_in]->(v)
+          SET r.date       = paper.publication.date,
+              r.volume     = paper.publication.volume,
+              r.issue      = paper.publication.issue,
+              r.first_page = paper.publication.first_page,
+              r.last_page  = paper.publication.last_page
+        )
 
-    if (publication && publication.journal) {
-        await session.run(`
-            MERGE (v:venue {name: $venue})
-            MERGE (p:paper {id: $id})
-            MERGE (p)-[r:published_in]->(v)
-            SET r.date = $date,
-                r.volume = $volume,
-                r.issue = $issue, 
-                r.first_page = $first_page,
-                r.last_page = $last_page
-        `, {
-            id,
-            venue: publication.journal,
-            date: publication.date,
-            volume: publication.volume || null,
-            issue: publication.issue || null,
-            first_page: publication.first_page || null,
-            last_page: publication.last_page || null
-        });
-    }
+        // authors + affiliations
+        FOREACH (aData IN paper.authors |
+          MERGE (a:author {name: aData.name})
+          MERGE (p)-[:has_author]->(a)
+          FOREACH (aff IN aData.affiliation | 
+            MERGE (i:institution {name: aff})
+            MERGE (a)-[:affiliated_with]->(i)
+          )
+        )
 
-    for (const author of authors) {
-        await session.run(`
-            MERGE (a:author {name: $name})
-            MERGE (p:paper {id: $paperId})
-            MERGE (p)-[:has_author]->(a)
-        `, { name: author.name, paperId: id });
+        // topic hierarchy
+        FOREACH (t IN paper.topics |
+          MERGE (d:domain {name: t.domain})
+          MERGE (f:field {name: t.field})-[:belongs_to]->(d)
+          MERGE (s:subfield {name: t.subfield})-[:belongs_to]->(f)
+          MERGE (tp:topic {name: t.topic})-[:belongs_to]->(s)
+          MERGE (p)-[:has_topic]->(tp)
+        )
 
-        for (const affiliation of author.affiliation || []) {
-            await session.run(`
-                MERGE (i:institution {name: $affiliation})
-                MERGE (a:author {name: $author})
-                MERGE (a)-[:affiliated_with]->(i)
-            `, { author: author.name, affiliation });
-        }
-    }
-
-    for (const t of topics || []) {
-        await session.run(`
-            MERGE (d:domain {name: $domain})
-            MERGE (f:field {name: $field})
-                MERGE (f)-[:belongs_to]->(d)
-            MERGE (s:subfield {name: $subfield})
-                MERGE (s)-[:belongs_to]->(f)
-            MERGE (t:topic {name: $topic})
-                MERGE (t)-[:belongs_to]->(s)
-            MERGE (p:paper {id: $paperId})
-                MERGE (p)-[:has_topic]->(t)
-        `, {
-            paperId: id,
-            topic: t.topic,
-            subfield: t.subfield,
-            field: t.field,
-            domain: t.domain
-        });
-    }
-
-    for (const refId of citations.referenced_works || []) {
-        await session.run(`
-            MERGE (p1:paper {id: $from})
-            MERGE (p2:paper {id: $to})
-            MERGE (p1)-[:cites]->(p2)
-        `, { from: id, to: refId });
-    }
+        // citations edges
+        FOREACH (refId IN paper.referenced_works |
+          MERGE (citing:paper {id: paper.id})
+          MERGE (cited:paper  {id: refId})
+          MERGE (citing)-[:cites]->(cited)
+        )
+        `,
+        { batch: papersBatch }
+      )
+    );
+  } finally {
+    await session.close();
+  }
 }
 
 async function main() {
-    const inputFile = 'data/papers.jsonl';
-    const failedFile = 'data/failed_papers.jsonl'; // papers that couldn't be processed are written here
+  const inputFile  = 'data/papers.jsonl';
+  const failedFile = 'data/failed_papers.jsonl';
+  const BATCH_SIZE = 20;
+  const failed = [];
 
-    if (!fs.existsSync(inputFile)) {
-        console.log('No input file found.');
-        return;
-    }
+  if (!fs.existsSync(inputFile)) {
+    console.log('No input file found.');
+    return;
+  }
 
-    const lines = fs.readFileSync(inputFile, 'utf-8').split('\n').filter(Boolean);
-    const failedLines = [];
-    const session = driver.session();
+  const lines = fs.readFileSync(inputFile, 'utf-8').split('\n').filter(Boolean);
+
+  // parse and prepare in-memory
+  const papers = lines.map(line => {
+    const p = JSON.parse(line);
+    return {
+      id: p.id,
+      doi: p.doi,
+      title: p.title,
+      type: p.type,
+      cited_by_count: p.citations.count,
+      is_open_access: p.full_text_url !== null,
+      full_source:     p.full_text_url,
+      keywords:        p.keywords.join(', '),
+      abstract_inverted_index: p.abstract_inverted_index
+                                 ? JSON.stringify(p.abstract_inverted_index)
+                                 : null,
+      publication:     p.publication || {},
+      authors:         p.authors || [],
+      topics:          p.topics || [],
+      referenced_works:p.citations.referenced_works || []
+    };
+  });
+
+
+  for (let i = 0; i < papers.length; i += BATCH_SIZE) {
+    const batch = papers.slice(i, i + BATCH_SIZE);
     try {
-        for (const line of lines) {
-            try {
-                const paper = JSON.parse(line);
-                await importPaper(paper, session);
-                console.log(`Imported paper: ${paper.id}`);
-            } catch (err) {
-                console.error('Error importing paper:', err.message);
-                failedLines.push(line);
-            }
-        }
-    } finally {
-        await session.close();
-        await driver.close();
+      await importPapersBatch(batch);
+      console.log(`Imported batch ${i}-${i + batch.length - 1}`);
+    } catch (err) {
+      console.error(`Batch ${i}-${i + batch.length - 1} failed:`, err);
+      failed.push(...lines.slice(i, i + batch.length));
     }
+  }
 
-    if (failedLines.length > 0) {
-        fs.appendFileSync(failedFile, failedLines.join('\n') + '\n', 'utf-8');
-        console.log(`Failed papers appended to ${failedFile}`);
-    }
+  if (failed.length) {
+    fs.appendFileSync(failedFile, failed.join('\n') + '\n', 'utf-8');
+    console.log(`Appended ${failed.length} failed papers to ${failedFile}`);
+  }
 
-    fs.writeFileSync(inputFile, '', 'utf-8');
-    console.log('Input file cleared. Import complete.');
+  fs.writeFileSync(inputFile, '', 'utf-8');
+  console.log('Input file cleared. Import complete.');
+  await driver.close();
 }
 
 main();
