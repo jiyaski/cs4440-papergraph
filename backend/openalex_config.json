@@ -4,9 +4,7 @@
         "Graph database": "C176225458"
     },
     "earliest_fetched_date": "2020-12-28",
-    "latest_fetched_date": "2021-02-01",
+    "latest_fetched_date": "2021-02-03",
     "start_date": "2000-01-01",
-    "cursors": {
-        "C176225458_2021-02-02": "IlsxNjEyMjI0MDAwMDAwLCA2Ni4wLCAxLCAnaHR0cHM6Ly9vcGVuYWxleC5vcmcvVzMxODE1OTEwNzYnXSI="
-    }
+    "cursors": {}
 }

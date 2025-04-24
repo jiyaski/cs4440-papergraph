@@ -167,7 +167,7 @@ export default function Search({ onResults, onSearch }: SearchProps) {
 
     try {
       const res = await fetch(url.toString())
-      console.log('📡 Sent request to:', url.toString())
+      console.log('Sent request to:', url.toString())
       if (!res.ok) throw new Error('Search failed')
 
       const data = await res.json()

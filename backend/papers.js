@@ -38,7 +38,7 @@ router.get('/search', async (req, res) => {
             cypher += `\nWHERE ` + cypherParts.join(' AND ');
         }
 
-        cypher += `\nRETURN p LIMIT 15`;
+        cypher += `\nRETURN DISTINCT p LIMIT 15`;
 
         const result = await session.run(cypher, params);
         const papers = result.records.map(r => r.get('p').properties);
