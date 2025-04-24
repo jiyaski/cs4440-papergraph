@@ -14,7 +14,7 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
   const gRef = useRef<SVGGElement | null>(null)
 
   useEffect(() => {
-    console.log('📊 Graph received data:', data)
+    console.log('Graph received data:', data)
 
     if (!data.length || !svgRef.current || !gRef.current) return
 
