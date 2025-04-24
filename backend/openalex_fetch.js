@@ -66,12 +66,12 @@ function extractRelevantPaperInfo(paper) {
             referenced_works: (paper.referenced_works || []).map(ref => ref.split('/').pop()) // id from url
         },
         keywords: (paper.keywords || []).map(k => k.display_name),
-        topics: (paper.topics || []).map(t => ({
-            topic: t.display_name,
-            subfield: t.subfield?.display_name,
-            field: t.field?.display_name,
-            domain: t.domain?.display_name
-        })),
+        primary_topic: paper.primary_topic ? {
+            topic: paper.primary_topic.display_name, 
+            subfield: paper.primary_topic.subfield?.display_name, 
+            field: paper.primary_topic.field?.display_name, 
+            domain: paper.primary_topic.domain?.display_name
+        } : null, 
         abstract_inverted_index: paper.abstract_inverted_index || null
     };
 }
@@ -152,12 +152,8 @@ async function runOpenAlexFetch(direction) {
         }
     }
 
-    if (totalFetched > 0) {
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4));
-        console.log(`Updated config after fetching ${totalFetched} papers.`);
-    } else {
-        console.log('No new papers fetched for any concept.');
-    }
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4));
+    console.log(`Updated config after fetching ${totalFetched} papers.`);
 }
 
 module.exports = runOpenAlexFetch;

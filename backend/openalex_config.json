@@ -1,12 +1,12 @@
 {
     "page_size": 100,
     "concepts": {
-        "Database": "C77088390"
+        "Graph database": "C176225458"
     },
-    "earliest_fetched_date": "2020-12-31",
-    "latest_fetched_date": "2020-12-31",
+    "earliest_fetched_date": "2020-12-28",
+    "latest_fetched_date": "2021-02-01",
     "start_date": "2000-01-01",
     "cursors": {
-        "C77088390_2021-01-01": "IlsxNjA5NDU5MjAwMDAwLCA5Ny4wLCAzNywgJ2h0dHBzOi8vb3BlbmFsZXgub3JnL1czMjA2MjYzMTIwJ10i"
+        "C176225458_2021-02-02": "IlsxNjEyMjI0MDAwMDAwLCA2Ni4wLCAxLCAnaHR0cHM6Ly9vcGVuYWxleC5vcmcvVzMxODE1OTEwNzYnXSI="
     }
 }

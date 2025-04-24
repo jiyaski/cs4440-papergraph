@@ -43,11 +43,11 @@ async function importPapersBatch(papersBatch) {
         )
 
         // topic hierarchy
-        FOREACH (t IN paper.topics |
-          MERGE (d:domain {name: t.domain})
-          MERGE (f:field {name: t.field})-[:belongs_to]->(d)
-          MERGE (s:subfield {name: t.subfield})-[:belongs_to]->(f)
-          MERGE (tp:topic {name: t.topic})-[:belongs_to]->(s)
+        FOREACH (_ IN CASE WHEN paper.primary_topic IS NOT NULL THEN [1] ELSE [] END |
+          MERGE (d:domain {name: paper.primary_topic.domain})
+          MERGE (f:field {name: paper.primary_topic.field})-[:belongs_to]->(d)
+          MERGE (s:subfield {name: paper.primary_topic.subfield})-[:belongs_to]->(f)
+          MERGE (tp:topic {name: paper.primary_topic.topic})-[:belongs_to]->(s)
           MERGE (p)-[:has_topic]->(tp)
         )
 
@@ -96,7 +96,7 @@ async function main() {
                                  : null,
       publication:     p.publication || {},
       authors:         p.authors || [],
-      topics:          p.topics || [],
+      primary_topic:   primary_topic || null, 
       referenced_works:p.citations.referenced_works || []
     };
   });
