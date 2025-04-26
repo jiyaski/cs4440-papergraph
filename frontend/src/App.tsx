@@ -13,18 +13,15 @@ export interface Paper {
   keywords: string[]
   abstract_inverted_index?: Record<string, number[]>
 
-  authors: {
-    name: string
-    affiliation: string[]
-  }[]
+  authors: { name: string; affiliation: string[] }[]; 
 
-  publication: {
-    journal: string
-    volume: string
-    issue: string
-    date: string
-    first_page: string
-    last_page: string
+  publication?: {
+    journal?: string
+    volume?: string
+    issue?: string
+    date?: string
+    first_page?: string
+    last_page?: string
   }
 
   citations: {
@@ -32,14 +29,16 @@ export interface Paper {
     referenced_works: string[]
   }
 
-  topics: {
+  topics?: {
     topic: string
     subfield: string
     field: string
     domain: string
   }[]
+  full_source?: string 
+  cited_by_count?: number
+  primary_topic?: string
 }
-
 
 function App() {
   const [results, setResults] = useState<Paper[]>([])
