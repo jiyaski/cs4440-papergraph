@@ -5,10 +5,22 @@ interface PaperDetailsProps {
   paper: Paper | null
 }
 
+function reconstruct(index: Record<string, number[]>): string {
+  const positions: string[] = [];
+  for (const [word, idxs] of Object.entries(index)) {
+    idxs.forEach(position => {
+      positions[position] = word;
+    });
+  }
+  return positions.join(' ');
+}
+
+
 export default function PaperContent({ paper }: PaperDetailsProps) {
+  
   if (!paper) return <div className="paper-content">Select a paper to see details.</div>
 
-  return (
+    return (
       <div className="paper-content">
         <h2 className="paper-title">{paper.title}</h2>
   
@@ -23,7 +35,7 @@ export default function PaperContent({ paper }: PaperDetailsProps) {
         </p>
   
         <p className="paper-meta">
-          <strong>Published In:</strong>{' '}
+          <strong>Publication Data:</strong>{' '}
           {paper.publication?.journal || 'Unknown'} {paper.publication?.date ? `(${paper.publication.date})` : ''}
         </p>
   
@@ -65,6 +77,16 @@ export default function PaperContent({ paper }: PaperDetailsProps) {
             <strong>Primary Topic:</strong> {paper.primary_topic || 'Unknown'}
           </p>
         )}
+
+        <div className="paper-meta">
+          <strong>Abstract:</strong> 
+          {paper.abstract_inverted_index ? (
+            <p>{reconstruct(JSON.parse(paper.abstract_inverted_index))}</p>
+          ) : (
+            <p className="text-gray-400">Abstract unavailable.</p>
+          )}
+        </div>
+
       </div>
     )
-}
+  }  
