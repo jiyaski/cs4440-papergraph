@@ -11,9 +11,9 @@ export interface Paper {
   type: string
   full_text_url: string
   keywords: string[]
-  abstract_inverted_index?: Record<string, number[]>
+  abstract_inverted_index?: string;
 
-  authors: { name: string; affiliation: string[] }[]; 
+  authors: { name: string }[]; 
 
   publication?: {
     journal?: string
