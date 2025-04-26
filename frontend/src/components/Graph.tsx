@@ -64,9 +64,15 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
           .on('drag', dragged)
           .on('end', dragEnded)
       )
-      .on('click', (_, d) => {
-        const paper = data.find((p) => p.id === d.id)
-        if (paper) onSelectPaper(paper)
+      .on('click', async (_, d) => {
+        try {
+          const res = await fetch(`http://localhost:3000/papers/${d.id}`);
+          if (!res.ok) throw new Error('Failed to fetch paper details');
+          const fullPaper = await res.json();
+          onSelectPaper(fullPaper);
+        } catch (err) {
+          console.error('Error fetching paper details:', err);
+        }
       })
 
     const label = g
