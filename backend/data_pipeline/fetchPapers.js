@@ -1,10 +1,11 @@
-// fetch.js
+
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const { extractRelevantPaperInfo } = require('./shared');
 
-const CONFIG_PATH = path.join(__dirname, 'openalex_config.json');
-const OUTPUT_PATH = path.join(__dirname, 'data', 'papers.jsonl');
+const CONFIG_PATH = path.join(__dirname, '../openalex_config.json');
+const OUTPUT_PATH = path.join(__dirname, '../data', 'papers.jsonl');
 
 
 
@@ -15,7 +16,7 @@ function addDays(dateStr, numDays) {
 }
 
 
-async function fetchPapersForDay({ conceptId, fromDate, toDate, cursor, pageSize, mailto }) {
+async function fetchPapersForDateRange({ conceptId, fromDate, toDate, cursor, pageSize, mailto }) {
     const baseUrl = 'https://api.openalex.org/works';
 
     const params = new URLSearchParams({
@@ -42,41 +43,6 @@ async function fetchPapersForDay({ conceptId, fromDate, toDate, cursor, pageSize
 }
 
 
-function extractRelevantPaperInfo(paper) {
-    return {
-        id: paper.id.split('/').pop(),  // extract id from url
-        title: paper.title,
-        doi: paper.doi,
-        type: paper.type,
-        authors: (paper.authorships || []).map(auth => ({
-            name: auth.author?.display_name,
-            affiliation: auth.institutions?.map(inst => inst.display_name)
-        })),
-        full_text_url: paper.best_oa_location?.url || paper.primary_location?.pdf_url || null,
-        publication: {
-            date: paper.publication_date,
-            journal: paper.primary_location?.source?.display_name || null,
-            volume: paper.biblio?.volume || null,
-            issue: paper.biblio?.issue || null,
-            first_page: paper.biblio?.first_page || null,
-            last_page: paper.biblio?.last_page || null
-        },
-        citations: {
-            count: paper.cited_by_count,
-            referenced_works: (paper.referenced_works || []).map(ref => ref.split('/').pop()) // id from url
-        },
-        keywords: (paper.keywords || []).map(k => k.display_name),
-        primary_topic: paper.primary_topic ? {
-            topic: paper.primary_topic.display_name, 
-            subfield: paper.primary_topic.subfield?.display_name, 
-            field: paper.primary_topic.field?.display_name, 
-            domain: paper.primary_topic.domain?.display_name
-        } : null, 
-        abstract_inverted_index: paper.abstract_inverted_index || null
-    };
-}
-
-
 async function runOpenAlexFetch(direction) {
     if (!['forward', 'backward'].includes(direction)) {
         throw new Error('Direction must be "forward" or "backward".');
@@ -89,6 +55,7 @@ async function runOpenAlexFetch(direction) {
         latest_fetched_date,
         start_date,
         page_size,
+        date_delta, 
         cursors = {}
     } = config;
 
@@ -103,23 +70,22 @@ async function runOpenAlexFetch(direction) {
 
         if (direction === 'forward') {
             fromDate = addDays(latest_fetched_date, 1);
-            toDate = fromDate;
+            toDate = addDays(fromDate, date_delta - 1);
         } else if (direction === 'backward') {
             if (earliest_fetched_date <= start_date) {
                 console.log(`Already reached start_date for "${conceptName}". Skipping.`);
                 continue;
             }
             toDate = addDays(earliest_fetched_date, -1);
-            fromDate = toDate;
-            if (toDate < start_date) {
-                console.log(`toDate before start_date. Skipping "${conceptName}".`);
-                continue;
+            fromDate = addDays(toDate, -(date_delta - 1));
+            if (fromDate < start_date) {
+                fromDate = start_date;
             }
         }
 
         const conceptCursorKey = `${conceptId}_${fromDate}`;
         const cursor = cursors[conceptCursorKey] || null;
-        const { results, nextCursor } = await fetchPapersForDay({
+        const { results, nextCursor } = await fetchPapersForDateRange({
             conceptId,
             fromDate,
             toDate,
@@ -135,17 +101,18 @@ async function runOpenAlexFetch(direction) {
                 .join('\n');
             fs.appendFileSync(OUTPUT_PATH, output + '\n');
             totalFetched += results.length;
-            console.log(`Fetched ${results.length} papers for "${conceptName}" on ${fromDate}`);
+            console.log(`Fetched ${results.length} papers for "${conceptName}" from ${fromDate} to ${toDate}`);
         } else {
-            console.log(`No results for "${conceptName}" on ${fromDate}`);
+            console.log(`No results for "${conceptName}" from ${fromDate} to ${toDate}`);
         }
 
-        if (nextCursor) {
+        const isFullPage = results.length === page_size; 
+        if (isFullPage && nextCursor) {
             config.cursors[conceptCursorKey] = nextCursor;
         } else {
             delete config.cursors[conceptCursorKey];
             if (direction === 'forward') {
-                config.latest_fetched_date = fromDate;
+                config.latest_fetched_date = toDate;
             } else {
                 config.earliest_fetched_date = fromDate;
             }
@@ -156,7 +123,7 @@ async function runOpenAlexFetch(direction) {
     console.log(`Updated config after fetching ${totalFetched} papers.`);
 }
 
-module.exports = runOpenAlexFetch;
+module.exports = runOpenAlexFetch; 
 
 if (require.main === module) {
     const direction = process.argv[2] || 'forward';

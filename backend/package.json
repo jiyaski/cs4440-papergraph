@@ -6,9 +6,9 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "importpapers": "node openalex_import.js", 
-    "fetchforward": "node openalex_fetch.js forward", 
-    "fetchbackward": "node openalex_fetch.js backward"
+    "importpapers": "node ./data_pipeline/importPapers.js", 
+    "fetchforward": "node ./data_pipeline/fetchPapers.js forward", 
+    "fetchbackward": "node ./data_pipeline/fetchPapers.js backward"
   },
   "keywords": [],
   "author": "",

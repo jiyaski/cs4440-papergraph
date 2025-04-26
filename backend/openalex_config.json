@@ -1,10 +1,11 @@
 {
-    "page_size": 100,
     "concepts": {
         "Graph database": "C176225458"
     },
-    "earliest_fetched_date": "2020-12-28",
-    "latest_fetched_date": "2021-02-03",
+    "earliest_fetched_date": "2020-01-29",
+    "latest_fetched_date": "2021-08-11",
     "start_date": "2000-01-01",
+    "page_size": 100,
+    "date_delta": 14,
     "cursors": {}
 }
