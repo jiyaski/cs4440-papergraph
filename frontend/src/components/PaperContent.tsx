@@ -14,14 +14,12 @@ export default function PaperContent({ paper }: PaperDetailsProps) {
   
         <p className="paper-meta">
           <strong>Authors:</strong>{' '}
-          {paper.authors && paper.authors.length > 0 ? (paper.authors.map((author, idx) => (
+          {paper.authors.map((author, idx) => (
             <span key={idx}>
-              {author.name}{idx < paper.authors.length - 1 ? ', ' : ''}
+              {(typeof author === 'string' ? author : author?.name) || "Unknown"}
+              {idx !== paper.authors.length - 1 && "; "}
             </span>
-          ))
-          ) : (
-            <span>Unknown</span>
-          )}
+          ))}
         </p>
   
         <p className="paper-meta">
