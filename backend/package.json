@@ -9,7 +9,8 @@
     "fetchforward": "node ./data_pipeline/fetchPapers.js forward", 
     "fetchbackward": "node ./data_pipeline/fetchPapers.js backward",
     "importpapers": "node ./data_pipeline/importPapers.js",
-    "fillstubs": "node ./data_pipeline/fillPaperStubs.js"
+    "fillstubs": "node ./data_pipeline/fillPaperStubs.js",
+    "cullpapers": "node ./data_pipeline/cullLowCitedPapers.js"
   },
   "keywords": [],
   "author": "",
