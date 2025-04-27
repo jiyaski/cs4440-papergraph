@@ -9,6 +9,14 @@ interface GraphProps {
   hasSearched: boolean
 }
 
+const typeColorMap: Record<string, string> = {
+  'preprint':     'lightblue',
+  'article':      '#5555ff',
+  'review':       'magenta',
+  'book':         'green',
+  'book-chapter': 'green',
+}
+
 export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const gRef = useRef<SVGGElement | null>(null)
@@ -27,13 +35,23 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
 
     g.selectAll('*').remove()
 
-    const nodes = data.map((d) => ({ id: d.id, label: d.title }))
+    const nodes = data.map((d) => ({ 
+      id: d.id, 
+      label: d.title, 
+      cited_by_count: d.cited_by_count || 0,
+      type: d.type,
+    }))
     const links = data.flatMap((d) =>
       (d.citations?.referenced_works || []).map((targetId) => ({
         source: d.id,
         target: targetId
       }))
     )
+
+    // for sizing nodes based on cited_by_count 
+    const radiusScale = d3.scaleSqrt()
+      .domain([0, d3.max(nodes, (d) => d.cited_by_count) || 1])
+      .range([5, 25])  // min/max radius sizes
 
     const simulation = d3
       .forceSimulation(nodes as any)
@@ -55,8 +73,8 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
       .selectAll<SVGCircleElement, any>('circle')
       .data(nodes)
       .join('circle')
-      .attr('r', 8)
-      .attr('fill', 'steelblue')
+      .attr('r', (d) => radiusScale(d.cited_by_count))  // size nodes based on citation count 
+      .attr('fill', (d) => typeColorMap[d.type] || 'orange')  // color nodes based on type 
       .call(
         d3
           .drag<SVGCircleElement, any>()
@@ -82,7 +100,7 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
       .join('text')
       .text((d) => d.label)
       .attr('font-size', 10)
-      .attr('dx', 12)
+      .attr('dx', (d) => radiusScale(d.cited_by_count) + 4)
       .attr('dy', '.35em')
       .attr('fill', 'white')
 
