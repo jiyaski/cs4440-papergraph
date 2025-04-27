@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const runOpenAlexFetch = require('./openalex_fetch');
+const runOpenAlexFetch = require('./data_pipeline/fetchPapers');
 const { exec } = require('child_process');
 
 // Schedule to run every day at midnight
@@ -9,7 +9,7 @@ cron.schedule('0 0 * * *', async () => {
     try {
         await runOpenAlexFetch('forward');
         console.log('[Scheduler] Fetch complete. Running import...');
-        exec('node openalex_import.js', (err, stdout, stderr) => {
+        exec('node ./data_pipeline/importPapers.js', (err, stdout, stderr) => {
             if (err) {
                 console.error('[Scheduler] Import failed:', err.message);
             } else {

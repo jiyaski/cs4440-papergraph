@@ -3,7 +3,7 @@ const express = require('express');
 const driver = require('./neo4j');
 const cors = require('cors');
 
-const runOpenAlexFetch = require('./openalex_fetch'); // <- Import the fetch script
+const runOpenAlexFetch = require('./data_pipeline/fetchPapers'); // <- Import the fetch script
 const papersRouter = require('./papers'); // <- Import the papers route (searching feature)
 const app = express();
 const PORT = process.env.PORT || 3000;

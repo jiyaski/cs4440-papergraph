@@ -6,9 +6,10 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "importpapers": "node ./data_pipeline/importPapers.js", 
     "fetchforward": "node ./data_pipeline/fetchPapers.js forward", 
-    "fetchbackward": "node ./data_pipeline/fetchPapers.js backward"
+    "fetchbackward": "node ./data_pipeline/fetchPapers.js backward",
+    "importpapers": "node ./data_pipeline/importPapers.js",
+    "fillstubs": "node ./data_pipeline/fillPaperStubs.js"
   },
   "keywords": [],
   "author": "",

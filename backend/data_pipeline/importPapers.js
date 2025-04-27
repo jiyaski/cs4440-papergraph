@@ -28,9 +28,7 @@ async function main() {
             is_open_access: p.full_text_url !== null,
             full_source:     p.full_text_url,
             keywords:        p.keywords.join(', '),
-            abstract_inverted_index: p.abstract_inverted_index
-                                     ? JSON.stringify(p.abstract_inverted_index)
-                                     : null,
+            abstract_inverted_index: p.abstract_inverted_index, 
             publication:     p.publication || {},
             authors:         p.authors || [],
             primary_topic:   p.primary_topic || null,
