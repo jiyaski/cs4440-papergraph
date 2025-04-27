@@ -38,10 +38,17 @@ router.get('/search', async (req, res) => {
             cypher += `\nWHERE ` + cypherParts.join(' AND ');
         }
 
-        cypher += `\nRETURN DISTINCT p LIMIT 15`;
+        cypher += `\nOPTIONAL MATCH (p)-[:cites]->(cited:paper) RETURN DISTINCT p, collect(cited.id) AS referenced_works LIMIT 15`;
 
         const result = await session.run(cypher, params);
-        const papers = result.records.map(r => r.get('p').properties);
+        const papers = result.records.map(r => {
+            const paper = r.get('p').properties;
+            const refs = r.get('referenced_works');
+            return {
+                ...paper,
+                referenced_works: refs.filter(id => id !== null)
+            };
+        })
         res.json(papers); //returns properties of the paper node as a json
     } catch (err) {
         console.error('Search error:', err);
