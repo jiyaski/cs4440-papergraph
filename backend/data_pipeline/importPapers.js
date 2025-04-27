@@ -24,7 +24,7 @@ async function main() {
             doi: p.doi,
             title: p.title,
             type: p.type,
-            cited_by_count: p.citations.count,
+            cited_by_count: p.cited_by_count,
             is_open_access: p.full_text_url !== null,
             full_source:     p.full_text_url,
             keywords:        p.keywords.join(', '),
@@ -32,7 +32,7 @@ async function main() {
             publication:     p.publication || {},
             authors:         p.authors || [],
             primary_topic:   p.primary_topic || null,
-            referenced_works: p.citations.referenced_works || []
+            referenced_works: p.referenced_works || []
         };
     });
 

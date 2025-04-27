@@ -10,6 +10,7 @@ function extractRelevantPaperInfo(paper) {
         title: paper.title,
         doi: paper.doi,
         type: paper.type,
+        cited_by_count: paper.cited_by_count,
         authors: (paper.authorships || []).map(auth => ({
             name: auth.author?.display_name,
             affiliation: auth.institutions?.map(inst => inst.display_name)
@@ -23,10 +24,7 @@ function extractRelevantPaperInfo(paper) {
             first_page: paper.biblio?.first_page || null,
             last_page: paper.biblio?.last_page || null
         },
-        citations: {
-            count: paper.cited_by_count,
-            referenced_works: (paper.referenced_works || []).map(ref => ref.split('/').pop()) // id from url
-        },
+        referenced_works: (paper.referenced_works || []).map(ref => ref.split('/').pop()), // id from url
         keywords: (paper.keywords || []).map(k => k.display_name),
         primary_topic: paper.primary_topic ? {
             topic: paper.primary_topic.display_name, 
