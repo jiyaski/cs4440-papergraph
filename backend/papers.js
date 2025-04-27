@@ -38,7 +38,7 @@ router.get('/search', async (req, res) => {
             cypher += `\nWHERE ` + cypherParts.join(' AND ');
         }
 
-        cypher += `\nOPTIONAL MATCH (p)-[:cites]->(cited:paper) RETURN DISTINCT p, collect(cited.id) AS referenced_works LIMIT 15`;
+        cypher += `\nOPTIONAL MATCH (p)-[:cites]->(cited:paper) RETURN DISTINCT p, collect(cited.id) AS referenced_works ORDER BY p.cited_by_count DESC LIMIT 15`;
 
         const result = await session.run(cypher, params);
         const papers = result.records.map(r => {
