@@ -20,9 +20,11 @@ const typeColorMap: Record<string, string> = {
 export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const gRef = useRef<SVGGElement | null>(null)
+  const paperIds = new Set(data.map((d) => d.id));
 
   useEffect(() => {
     console.log('Graph received data:', data)
+    console.log('First paper sample:', data[10]);
 
     if (!data.length || !svgRef.current || !gRef.current) return
 
@@ -42,11 +44,14 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
       type: d.type,
     }))
     const links = data.flatMap((d) =>
-      (d.citations?.referenced_works || []).map((targetId) => ({
-        source: d.id,
-        target: targetId
-      }))
-    )
+      (d.referenced_works || [])
+        .filter((targetId) => paperIds.has(targetId))
+        .map((targetId) => ({
+          source: d.id,
+          target: targetId
+        }))
+    );
+    
 
     // for sizing nodes based on cited_by_count 
     const radiusScale = d3.scaleSqrt()
@@ -67,6 +72,9 @@ export default function Graph({ data, onSelectPaper, hasSearched }: GraphProps) 
       .selectAll('line')
       .data(links)
       .join('line')
+      .attr('stroke-width', 1.5) 
+      console.log('Links created:', links.length)
+
 
     const node = g
       .append('g')

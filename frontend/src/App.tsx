@@ -12,6 +12,8 @@ export interface Paper {
   full_text_url: string
   keywords: string[]
   abstract_inverted_index?: string;
+  referenced_works: string[];
+  cited_by_count: number;
 
   authors: { name: string }[]; 
 
@@ -24,11 +26,6 @@ export interface Paper {
     last_page?: string
   }
 
-  citations: {
-    count: number
-    referenced_works: string[]
-  }
-
   topics?: {
     topic: string
     subfield: string
@@ -36,7 +33,6 @@ export interface Paper {
     domain: string
   }[]
   full_source?: string 
-  cited_by_count?: number
   primary_topic?: string
 }
 
