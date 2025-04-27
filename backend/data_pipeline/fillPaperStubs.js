@@ -73,13 +73,44 @@ async function main() {
             } while (cursor && allResults.length < batch.length);
 
             if (allResults.length === 0) {
-                console.warn('  No metadata returned for this batch');
+                console.warn(`  No metadata returned for this batch: [${batch.join(', ')}]`);
+                // the batch consists solely of "stubborn stubs", which are papers whose IDs have changed so
+                // OpenAlex doesn't recognize them in our above calls. It's easiest to just delete them all. 
+                await session.executeWrite(tx =>
+                    tx.run(
+                        `MATCH (p:paper)
+                         WHERE p.id IN $ids AND size(keys(p)) = 1
+                         DETACH DELETE p`,
+                        { ids: batch }
+                    )
+                );
+                console.log(`  Deleted ${batch.length} stub-only nodes`);
                 continue;
             }
 
-            const condensed = allResults.map(paperJson => extractRelevantPaperInfo(paperJson));
-            await importPapersBatch(condensed, false);
-            console.log(`  Updated ${condensed.length} papers`);
+            // delete any stub nodes that truly have no info other than an ID (as returned by OpenAlex) 
+            // if we don't do this then they will also keep being recognized as stubs forever 
+            const stubOnly = allResults.filter(p => Object.keys(p).length === 1 && p.id); 
+            if (stubOnly.length > 0) {
+                    const stubIds = stubOnly.map(p => p.id.split('/').pop());
+                    await session.executeWrite(tx =>
+                        tx.run(
+                            `MATCH (p:paper)
+                            WHERE p.id IN $ids AND size(keys(p)) = 1
+                            DETACH DELETE p`,
+                            { ids: stubIds }
+                        )
+                    );
+                    console.log(`  Deleted ${stubIds.length} stub-only nodes`);
+                }
+
+            // fill metadata of any stub nodes that actually have metadata 
+            const realResults = allResults.filter(p => Object.keys(p).length > 1) 
+            if (realResults.length > 0) {
+                const condensed = realResults.map(paperJson => extractRelevantPaperInfo(paperJson));
+                await importPapersBatch(condensed, false);
+                console.log(`  Updated ${condensed.length} papers`);
+            }
         }
     } finally {
         await session.close();

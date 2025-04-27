@@ -73,11 +73,8 @@ async function importPapersBatch(papersBatch, includeCitations = true) {
             // authors + affiliations
             FOREACH (aData IN paper.authors |
                 MERGE (a:author {name: aData.name})
+                SET a.affiliations = aData.affiliation
                 MERGE (p)-[:has_author]->(a)
-                FOREACH (aff IN aData.affiliation |
-                    MERGE (i:institution {name: aff})
-                    MERGE (a)-[:affiliated_with]->(i)
-                )
             )
 
             // topic hierarchy
