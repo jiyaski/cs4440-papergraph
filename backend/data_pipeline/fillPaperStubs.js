@@ -4,7 +4,7 @@ const driver = require('../neo4j.js');
 const { extractRelevantPaperInfo, importPapersBatch } = require('./shared');
 
 const BATCH_FETCH_SIZE = 100;  // # of papers to retrieve in one OpenAlex API call. Can't exceed 100. 
-const MAX_STUBS = 500;        // # of stub papers to fill on one invocation of this script 
+const MAX_STUBS = 1000;        // # of stub papers to fill on one invocation of this script 
 const OPENALEX_BASE = 'https://api.openalex.org/works';
 const MAILTO = process.env.VITE_OPENALEX_MAILTO || process.env.OPENALEX_MAILTO;
 if (!MAILTO) {
@@ -29,6 +29,7 @@ function chunkArray(arr, size) {
 
 async function main() {
     const session = driver.session();
+    let noMetadataBatch = false; 
     try {
         // find all stub paper nodes (i.e. ones with no info other than ID) 
         const result = await session.executeRead(tx =>
@@ -42,6 +43,7 @@ async function main() {
         );
         const ids = result.records.map(r => r.get('id'));
         console.log(`Found ${ids.length} stub papers.`);
+        if (ids.length === 0) { process.exit(1); } 
 
         // separate into batches 
         const batches = chunkArray(ids, BATCH_FETCH_SIZE);
@@ -85,7 +87,8 @@ async function main() {
                     )
                 );
                 console.log(`  Deleted ${batch.length} stub-only nodes`);
-                continue;
+                noMetadataBatch = true; 
+                break; 
             }
 
             // delete any stub nodes that truly have no info other than an ID (as returned by OpenAlex) 
@@ -115,11 +118,12 @@ async function main() {
     } finally {
         await session.close();
         await driver.close();
+        if (noMetadataBatch) { process.exitCode = 1; } 
     }
 }
 
 
 main().catch(err => {
     console.error('Fatal error:', err);
-    process.exit(1);
+    process.exit(2);
 });
