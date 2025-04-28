@@ -7,9 +7,7 @@ cron.schedule('0 0 * * *', async () => {
     console.log('[Scheduler] Starting daily fetch + import...');
 
     try {
-        await runOpenAlexFetch('forward');
-        console.log('[Scheduler] Fetch complete. Running import...');
-        exec('node ./data_pipeline/importPapers.js', (err, stdout, stderr) => {
+        exec('node ./data_pipeline/consumePapers.js', (err, stdout, stderr) => {
             if (err) {
                 console.error('[Scheduler] Import failed:', err.message);
             } else {
