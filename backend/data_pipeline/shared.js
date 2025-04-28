@@ -40,7 +40,7 @@ function extractRelevantPaperInfo(paper) {
 
 
 // input papers in condensed JSON form and efficiently write them all to Neo4j 
-async function importPapersBatch(papersBatch, includeCitations = true) {
+async function importPapersBatch(papersBatch, allowCreateStubs = true) {
     const session = driver.session();
     try {
         let query = `
@@ -88,15 +88,24 @@ async function importPapersBatch(papersBatch, includeCitations = true) {
             )
         `;
 
-        if (includeCitations) {
+        if (allowCreateStubs) {
             query += `
-            // citations edges
+            // citations edges - may create new stub nodes 
             FOREACH (refId IN paper.referenced_works |
                 MERGE (citing:paper {id: paper.id})
                 MERGE (cited:paper  {id: refId})
                 MERGE (citing)-[:cites]->(cited)
             )
             `;
+        } else {
+            query += `
+            // only make edges to nodes already in graph, to avoid new stubs 
+            MERGE (citing:paper {id: paper.id}) 
+            WITH paper, citing 
+            UNWIND paper.referenced_works AS refId 
+            MATCH (cited:paper {id: refId}) 
+            MERGE (citing)-[:cites]->(cited)
+            `
         }
 
         await session.executeWrite(tx =>

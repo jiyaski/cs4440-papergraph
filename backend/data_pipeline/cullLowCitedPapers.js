@@ -1,52 +1,97 @@
+
+const neo4j = require('neo4j-driver');
 const driver = require('../neo4j');
 
 const MIN_CITED_BY_COUNT = 5;  // delete papers with cited_by_count less than this value
+const BATCH_SIZE = 500;         // max papers to delete per batch
 
 
 async function deleteLowCitedPapers() {
-    const session = driver.session();
-    try {
+    let totalDeleted = 0;
+    let deletedInBatch;
 
-        // Count and delete low-cited papers
-        const countResult = await session.run(
-            'MATCH (p:paper) WHERE p.cited_by_count < $minCount RETURN count(p) AS toDelete',
-            { minCount: MIN_CITED_BY_COUNT }
-        );
-        const papersToDelete = countResult.records[0].get('toDelete').toNumber();
-
-        if (papersToDelete > 0) {
-            await session.run(
-                'MATCH (p:paper) WHERE p.cited_by_count < $minCount DETACH DELETE p',
-                { minCount: MIN_CITED_BY_COUNT }
+    // using a fresh session on each batch to avoid neo4j timeout issues 
+    do {
+        const session = driver.session();
+        try {
+            const result = await session.executeWrite(tx =>
+                tx.run(`
+                    MATCH (p:paper)
+                    WHERE p.cited_by_count < $minCount
+                    WITH p
+                    LIMIT $batchSize
+                    DETACH DELETE p
+                    RETURN count(p) AS deletedCount
+                    `, {
+                        minCount: neo4j.int(MIN_CITED_BY_COUNT),
+                        batchSize: neo4j.int(BATCH_SIZE)
+                    }
+                )
             );
-            console.log(`Deleted ${papersToDelete} papers with cited_by_count < ${MIN_CITED_BY_COUNT}`);
-        } else {
-            console.log(`No papers found with cited_by_count < ${MIN_CITED_BY_COUNT}`);
+
+            deletedInBatch = result.records[0].get('deletedCount').toNumber();
+            if (deletedInBatch > 0) {
+                totalDeleted += deletedInBatch;
+                console.log(
+                    `Deleted ${deletedInBatch} papers in this batch ` +
+                    `(running total: ${totalDeleted})`
+                );
+            }
+
+        } catch (err) {
+            console.error('Error deleting batch:', err);
+            break;
+        } finally {
+            await session.close();
         }
+    } while (deletedInBatch === BATCH_SIZE);
 
 
-        // Count and delete orphaned authors
-        const orphanResult = await session.run(
-            'MATCH (a:author) WHERE NOT (a)-[:AUTHORED]->(:paper) RETURN count(a) AS toDelete'
-        );
-        const authorsToDelete = orphanResult.records[0].get('toDelete').toNumber();
-
-        if (authorsToDelete > 0) {
-            await session.run(
-                'MATCH (a:author) WHERE NOT (a)-[:AUTHORED]->(:paper) DETACH DELETE a'
-            );
-            console.log(`Deleted ${authorsToDelete} orphaned authors`);
-        } else {
-            console.log('No orphaned authors found.');
-        }
-
-
-    } catch (error) {
-        console.error('Error during cleanup:', error);
-    } finally {
-        await session.close();
-        await driver.close();
+    if (totalDeleted > 0) {
+        console.log(`Finished deleting low-cited papers. Total deleted: ${totalDeleted}`);
+    } else {
+        console.log(`No papers found with cited_by_count < ${MIN_CITED_BY_COUNT}`);
     }
+
+
+    // count and delete orphaned authors 
+    let totalDeletedAuthors = 0;
+    let deletedAuthorsInBatch;
+
+    do {
+        const session = driver.session();
+        try {
+            const result = await session.executeWrite(tx =>
+                tx.run(`
+                    MATCH (a:author)
+                    WHERE NOT (a)-[:has_author]-(:paper)
+                    WITH a
+                    LIMIT $batchSize
+                    DETACH DELETE a
+                    RETURN count(a) AS deletedCount
+                    `,{ batchSize: neo4j.int(BATCH_SIZE) }
+                )
+            );
+            deletedAuthorsInBatch = result.records[0].get('deletedCount').toNumber();
+            if (deletedAuthorsInBatch > 0) {
+                totalDeletedAuthors += deletedAuthorsInBatch;
+                console.log(
+                    `Deleted ${deletedAuthorsInBatch} authors in this batch ` +
+                    `(running total: ${totalDeletedAuthors})`
+                );
+            }
+        } catch (err) {
+            console.error('Error deleting author batch:', err);
+            break;
+        } finally {
+            await session.close();
+        }
+    } while (deletedAuthorsInBatch === BATCH_SIZE);
+
+    console.log(`Finished deleting orphaned authors. Total deleted: ${totalDeletedAuthors}`);
+
+    await driver.close();
 }
+
 
 deleteLowCitedPapers();

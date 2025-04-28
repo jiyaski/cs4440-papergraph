@@ -4,7 +4,7 @@ const driver = require('../neo4j.js');
 const { extractRelevantPaperInfo, importPapersBatch } = require('./shared');
 
 const BATCH_FETCH_SIZE = 100;  // # of papers to retrieve in one OpenAlex API call. Can't exceed 100. 
-const MAX_STUBS = 1000;        // # of stub papers to fill on one invocation of this script 
+const MAX_STUBS = 500;        // # of stub papers to fill on one invocation of this script 
 const OPENALEX_BASE = 'https://api.openalex.org/works';
 const MAILTO = process.env.VITE_OPENALEX_MAILTO || process.env.OPENALEX_MAILTO;
 if (!MAILTO) {
