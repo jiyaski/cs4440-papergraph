@@ -38,9 +38,11 @@ export interface Paper {
 
 
 function App() {
-  const [results, setResults] = useState<Paper[]>([])
-  const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null)
-  const [hasSearched, setHasSearched] = useState(false)
+  const [results, setResults] = useState<Paper[]>([]);
+  const [edges, setEdges] = useState<{ citing: string; cited: string }[]>([]);
+  const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
+  //const [hasSearched, setHasSearched] = useState(false);
+
 
 useEffect(() => {
   const resizer = document.getElementById('drag-bar')
@@ -80,20 +82,49 @@ useEffect(() => {
 }, [])
 
 
+async function handleResults(newResults: Paper[]) {
+  setResults(newResults);    // Save initial search results
+
+  if (newResults.length === 0) {
+    setEdges([]);
+    return;
+  }
+
+  const paperIds = newResults.map((p) => p.id).join(',');
+  try {
+    const res = await fetch(`http://localhost:3000/get-cited-papers?paperIds=${paperIds}&limit=20`);
+    if (!res.ok) throw new Error('Failed to fetch cited papers');
+    const data = await res.json();
+    console.log('Fetched cited papers data:', data);
+
+    const citedNodes = data.nodes || [];
+    const citedEdges = data.edges || [];
+
+    const allNodes = [
+      ...newResults,
+      ...citedNodes.filter((cn: Paper) => !newResults.some(r => r.id === cn.id))
+    ];
+    setResults(allNodes); 
+    setEdges(citedEdges); 
+  } catch (error) {
+    console.error('Error fetching cited papers:', error);
+    setEdges([]);
+  }
+}
 
   return (
     <div className="app-root">
       <header className="header">
         <h1 className="title">Research Paper Graph Exploration</h1>
-        <Search onResults={setResults} onSearch={() => setHasSearched(true)} />
+        <Search onResults={handleResults} />
       </header>
 
       <div className="main-container">
         <div className="main-left" id="graph-pane">
           <Graph
-            data={results}
+            nodes={results}
+            edges={edges}
             onSelectPaper={setSelectedPaper}
-            hasSearched={hasSearched}
           />
         </div>
 
