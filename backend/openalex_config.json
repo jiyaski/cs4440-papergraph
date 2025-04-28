@@ -6,6 +6,6 @@
     "latest_fetched_date": "2025-09-02",
     "start_date": "2000-01-01",
     "page_size": 100,
-    "date_delta": 180,
+    "date_delta": 1,
     "cursors": {}
 }

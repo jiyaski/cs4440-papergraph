@@ -7,7 +7,7 @@
 
 
 
-const driver = require('./neo4j.js');
+const driver = require('../neo4j.js');
 
 async function createConstraints() {
   const session = driver.session();
