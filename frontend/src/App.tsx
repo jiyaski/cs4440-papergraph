@@ -83,7 +83,7 @@ useEffect(() => {
 
 
 async function handleResults(newResults: Paper[]) {
-  setResults(newResults);    // Save initial search results
+  setResults(newResults);
 
   if (newResults.length === 0) {
     setEdges([]);
@@ -100,11 +100,27 @@ async function handleResults(newResults: Paper[]) {
     const citedNodes = data.nodes || [];
     const citedEdges = data.edges || [];
 
-    const allNodes = [
-      ...newResults,
-      ...citedNodes.filter((cn: Paper) => !newResults.some(r => r.id === cn.id))
-    ];
-    setResults(allNodes); 
+    const allNodeMap = new Map<string, Paper>();
+    newResults.forEach((p) => allNodeMap.set(p.id, p));
+    citedNodes.forEach((p: Paper) => allNodeMap.set(p.id, p));
+
+    citedEdges.forEach((e: { citing: string; cited: string }) => {
+      if (!allNodeMap.has(e.citing)) {
+        allNodeMap.set(e.citing, {
+          id: e.citing,
+          title: 'Unknown',
+          type: 'paper',
+          cited_by_count: 0,
+          doi: '',
+          full_text_url: '',
+          keywords: [],
+          referenced_works: [],
+          authors: [],
+        });
+      }
+    });
+  
+    setResults(Array.from(allNodeMap.values())); 
     setEdges(citedEdges); 
   } catch (error) {
     console.error('Error fetching cited papers:', error);
