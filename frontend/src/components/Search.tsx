@@ -4,10 +4,10 @@ import '../styles/Search.css'
 
 interface SearchProps {
   onResults: (results: Paper[]) => void
-  onSearch: () => void
 }
 
-export default function Search({ onResults, onSearch }: SearchProps) {
+
+export default function Search({ onResults }: SearchProps) {
   const [keywordQuery, setKeywordQuery] = useState('')
   const [authorQuery, setAuthorQuery] = useState('')
 
@@ -34,7 +34,6 @@ export default function Search({ onResults, onSearch }: SearchProps) {
       console.log('Received data:', data)
 
       onResults(data)
-      onSearch()
     } catch (err) {
       console.error('Search error:', err)
       onResults([])
