@@ -59,8 +59,8 @@ export default function Graph({ nodes = [], edges = [], onSelectPaper }: GraphPr
       .range([5, 25]);
 
     const simulation = d3.forceSimulation(d3Nodes as any)
-      .force('link', d3.forceLink(d3Edges).id((d: any) => d.id).distance(100))
-      .force('charge', d3.forceManyBody().strength(-300))
+      .force('link', d3.forceLink(d3Edges).id((d: any) => d.id).distance(125))
+      .force('charge', d3.forceManyBody().strength(-100))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .on('tick', ticked);
 
