@@ -1,46 +1,79 @@
 const express = require('express');
-const neo4j = require('./neo4j.js');
-
-const router = express.Router();
+const driver  = require('./neo4j');
+const router  = express.Router();
 
 router.get('/', async (req, res) => {
-  const session = neo4j.session();
-  
+  const rawIds = req.query.paperIds;
+  if (!rawIds) {
+    return res.status(400).json({ error: 'paperIds query parameter is required' });
+  }
+  const paperIds = rawIds.split(',').map(id => id.trim());
+  const limit    = parseInt(req.query.limit, 10) || 20;
+  const session  = driver.session();
+
   try {
-    const paperIdsParam = req.query.paperIds;
-    const limitParam = req.query.limit || 50;
+    const result = await session.run(
+      `
+      CALL {
+        MATCH (src:paper)-[:cites]->(dst:paper)
+        WHERE src.id IN $paperIds
+        RETURN src, dst
+        UNION
+        MATCH (src:paper)-[:cites]->(dst:paper)
+        WHERE dst.id IN $paperIds
+        RETURN src, dst
+      }
 
-    if (!paperIdsParam) {
-      return res.status(400).json({ error: 'paperIds query parameter is required.' });
-    }
+      OPTIONAL MATCH (src)-[:has_author]->(a1:author)
+      WITH src, dst, collect(DISTINCT a1.name) AS srcAuthors
 
-    const paperIds = paperIdsParam.split(',');
+      OPTIONAL MATCH (dst)-[:has_author]->(a2:author)
+      WITH src, dst, srcAuthors, collect(DISTINCT a2.name) AS dstAuthors
 
-    const query = `MATCH (src:paper)-[:cites]->(dst:paper) WHERE dst.id IN $paperIds RETURN src.id AS citing, dst.id AS cited, src LIMIT toInteger($limit)`;
+      RETURN
+        src {
+          .id,
+          .title,
+          .doi,
+          .type,
+          .cited_by_count,
+          authors: srcAuthors,
+          keywords: src.keywords,
+          referenced_works: src.referenced_works
+        } AS citingNode,
+        dst {
+          .id,
+          .title,
+          .doi,
+          .type,
+          .cited_by_count,
+          authors: dstAuthors,
+          keywords: dst.keywords,
+          referenced_works: dst.referenced_works
+        } AS citedNode
+      LIMIT toInteger($limit)
+      `,
+      { paperIds, limit }
+    );
 
-    const result = await session.run(query, {
-      paperIds,
-      limit: parseInt(limitParam)
-    });
+    const nodesMap = new Map();
+    const edges    = [];
 
-    const edges = [];
-    const nodes = new Map();
-
-    result.records.forEach(record => {
-      const citingId = record.get('citing');
-      const citedId = record.get('cited');
-      const citedNode = record.get('src').properties;
-      edges.push({ citing: citingId, cited: citedId });
-      nodes.set(citedId, citedNode);
+    result.records.forEach(rec => {
+      const src = rec.get('citingNode');
+      const dst = rec.get('citedNode');
+      edges.push({ citing: src.id, cited: dst.id });
+      nodesMap.set(src.id, src);
+      nodesMap.set(dst.id, dst);
     });
 
     res.json({
       edges,
-      nodes: Array.from(nodes.values())
+      nodes: Array.from(nodesMap.values())
     });
-  } catch (error) {
-    console.error('Error fetching cited papers:', error);
-    res.status(500).json({ error: 'Failed to fetch cited papers.' });
+  } catch (err) {
+    console.error('Error in /get-cited-papers:', err);
+    res.status(500).json({ error: 'Internal server error' });
   } finally {
     await session.close();
   }

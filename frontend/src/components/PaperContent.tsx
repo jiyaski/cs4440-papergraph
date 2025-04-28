@@ -69,7 +69,8 @@ export default function PaperContent({ paper }: PaperDetailsProps) {
         </p>
   
         <p className="paper-meta">
-          <strong>Keywords:</strong> {paper.keywords || 'None'}
+          <strong>Keywords:</strong>{' '}
+          {paper.keywords && paper.keywords.length > 0 ? paper.keywords.join(', ') : 'None'}
         </p>
   
         {paper.primary_topic && (
